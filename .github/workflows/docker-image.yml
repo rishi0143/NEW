@@ -1,19 +1,50 @@
-
 name: KubeCI
-on: 
+
+on:
   push:
     branches:
       - main
+
 jobs:
   PythonCI:
-   runs-on: ubuntu-latest
-   steps:
-     - name: gitcheckout
-       uses: actions/checkout@v4
-     - name: Build docker image
-       run: "docker build -t rishi784/gha-pyapp:${GITHUB_SHA::7} ."
-     - name: Login to Docker Hub
-       uses: docker/login-action@v3
-       with:
-          username: "${{ secrets.DOCKER_USERNAME }}"
-          password: "${{ secrets.DOCKER_PASSWORD }}"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t rishi784/gha-pyapp:${GITHUB_SHA::7} .
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push Docker Image to Docker Hub
+        run: docker push rishi784/gha-pyapp:${GITHUB_SHA::7}
+
+      - name: Install yq
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 \
+            -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
+
+      - name: Update deployment.yml with latest Docker tag
+        run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+
+          yq -i '.spec.template.spec.containers[0].image = "rishi784/gha-pyapp:" + strenv(SHORT_SHA)' \
+            ./k8s/pyapp-deployment.yml
+
+      - name: Commit deployment file changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add k8s/pyapp-deployment.yml
+
+          git commit -m "Update Docker image tag" || echo "No changes to commit"
+
+          git push origin main
