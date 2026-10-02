@@ -31,6 +31,6 @@ jobs:
       - name: Push Docker Image
         run: |
           SHORT_SHA=${GITHUB_SHA::7}
-          docker push rishi784/gha-pyapp:${SHORT_SHA}
+          docker push rishi784/gha:${SHORT_SHA}
 
      
