@@ -12,7 +12,7 @@ jobs:
     steps:
 
       # 1. Checkout GitHub repository
-      - name: Git ccc
+      - name: Git checkout
         uses: actions/checkout@v4
 
       # 2. Build Docker image
